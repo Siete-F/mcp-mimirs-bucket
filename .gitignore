@@ -1,0 +1,81 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.python-version
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Virtual environment
+uv.lock
+
+# Logs
+*.log
+logs/
+
+# Test results
+.coverage
+htmlcov/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# ArangoDB
+arangodb/
+
+# Embedding models (they can be large)
+models/
+*.bin
+*.pt
+*.pth
+*.model
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Specific to this project
+embeddings/
+sentence_transformers_cache/
+*.vec
+*.vec.gz
+*.pickle
+*.pkl
+
+# Jupyter Notebook
+.ipynb_checkpoints

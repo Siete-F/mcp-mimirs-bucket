@@ -2,11 +2,7 @@
 MCP Server for Dynamic Documentation Knowledge Base using ArangoDB
 """
 
-# import os
-# import json
-# import asyncio
 from datetime import datetime
-# from typing import List, Dict, Tuple, Union
 from typing import Optional, Union
 import typing
 import logging
@@ -23,6 +19,9 @@ from arango_document_api import (
     # Relationship
 )
 
+# Import search functionality
+from search import register_search_tools
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -36,7 +35,13 @@ logger = logging.getLogger("knowledge-mcp")
 # Initialize FastMCP server
 mcp = FastMCP(
     "KnowledgeBase",
-    dependencies=["mcp", "python-arango", "python-dotenv"]
+    dependencies=[
+        "mcp", 
+        "python-arango", 
+        "python-dotenv",
+        "sentence-transformers",
+        "numpy"
+    ]
 )
 
 # Initialize the documentation system
@@ -524,6 +529,9 @@ def search_knowledge(query: str) -> str:
 
 Please provide a comprehensive answer based on all relevant knowledge you can find.
 """
+
+# Register search tools
+register_search_tools(mcp, doc_system)
 
 # Run the server if executed directly
 if __name__ == "__main__":

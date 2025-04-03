@@ -23,6 +23,8 @@ dependencies = [
     "python-arango>=7.5.0",
     "python-dotenv>=1.0.0",
     "mcp[cli]>=1.2.0",
+    "sentence-transformers>=2.2.2",
+    "numpy>=1.21.0",
 ]
 
 [project.optional-dependencies]

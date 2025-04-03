@@ -7,14 +7,16 @@ This project implements a Model Context Protocol (MCP) server that connects to a
 - **Knowledge Storage**: Store and organize information in a structured knowledge base
 - **Topic Management**: Organize knowledge into hierarchical topics
 - **Relationship Modeling**: Create connections between related knowledge items
-- **Semantic Search**: Find relevant information using natural language queries
+- **Semantic Search**: Find relevant information using vector embeddings and natural language queries
 - **Knowledge Growth**: Automatically expand the knowledge base during conversations
+- **Vector Embeddings**: Utilizes sentence-transformers for semantic understanding
 
 ## Prerequisites
 
 - Python 3.10+
 - ArangoDB (installed locally or running in Docker)
-- The `documentation_system.py` Python module (ArangoDB client)
+- The `arango_document_api.py` Python module (ArangoDB client)
+- sentence-transformers (optional but recommended for semantic search)
 
 ## Installation
 
@@ -32,7 +34,12 @@ This project implements a Model Context Protocol (MCP) server that connects to a
 
 3. Install dependencies:
    ```bash
-   pip install mcp python-arango python-dotenv
+   pip install mcp[cli] python-arango python-dotenv sentence-transformers numpy
+   ```
+   
+   Or use the provided pyproject.toml:
+   ```bash
+   pip install -e .
    ```
 
 4. Configure the database connection by creating a `.env` file:
@@ -41,6 +48,32 @@ This project implements a Model Context Protocol (MCP) server that connects to a
    ARANGO_DB=documentation
    ARANGO_USER=docadmin
    ARANGO_PASSWORD=your_password
+   
+   # MCP Server Settings
+   MCP_SERVER_NAME=KnowledgeBase
+   MCP_LOG_LEVEL=INFO
+   ```
+   
+5. Set up ArangoDB:
+
+   **Using Docker:**
+   ```bash
+   docker run -p 8529:8529 -e ARANGO_ROOT_PASSWORD=rootpassword arangodb/arangodb:3.10.4
+   ```
+   
+   Then create the database and collections:
+   ```bash
+   # Create database
+   docker exec -it <container_name> arangosh --server.authentication false --server.database _system --javascript.execute-string="db._createDatabase('documentation');"
+   
+   # Create collections
+   docker exec -it <container_name> arangosh --server.authentication false --server.database documentation --javascript.execute-string="db._createDocumentCollection('documents');"
+   docker exec -it <container_name> arangosh --server.authentication false --server.database documentation --javascript.execute-string="db._createDocumentCollection('topics');"
+   docker exec -it <container_name> arangosh --server.authentication false --server.database documentation --javascript.execute-string="db._createEdgeCollection('relationships');"
+   
+   # Create user
+   docker exec -it <container_name> arangosh --server.authentication false --server.database _system --javascript.execute-string="require('@arangodb/users').save('docadmin', 'your_password');"
+   docker exec -it <container_name> arangosh --server.authentication false --server.database _system --javascript.execute-string="require('@arangodb/users').grantDatabase('docadmin', 'documentation');"
    ```
 
 ## Usage
@@ -85,8 +118,10 @@ The server provides these tools:
 - `create_topic` - Create a new topic
 - `update_document` - Update an existing document
 - `link_documents` - Create relationships between documents
-- `retrieve_knowledge` - Find relevant information
+- `retrieve_knowledge` - Find relevant information using keywords
 - `delete_document` - Remove a document
+- `semantic_search` - Find documents using semantic meaning
+- `update_embeddings` - Generate or update vector embeddings
 
 ## Prompts
 
@@ -94,6 +129,48 @@ The server includes these prompt templates:
 
 - `store_new_knowledge` - Template for adding new knowledge
 - `search_knowledge` - Template for searching the knowledge base
+
+## Vector Embeddings and Semantic Search
+
+The knowledge base includes semantic search capabilities using vector embeddings, allowing you to find documents based on meaning rather than just keyword matching.
+
+### Setting Up Vector Search
+
+1. **Install Required Dependencies**:
+   ```bash
+   pip install sentence-transformers numpy
+   ```
+
+2. **Generate Embeddings**:
+   After adding documents, generate embeddings using the `update_embeddings` tool:
+   ```
+   You: I need to update vector embeddings for all documents
+   
+   Claude: [Uses update_embeddings tool]
+   Successfully updated embeddings for 15 documents.
+   ```
+
+3. **Using Semantic Search**:
+   ```
+   You: Can you find documents about authentication even if they don't mention that word specifically?
+   
+   Claude: [Uses semantic_search tool]
+   Semantic Search Results for: 'authentication'
+   
+   Found 3 semantically similar documents:
+   
+   1. Security Implementation (Similarity: 0.89)
+      Our system uses JWT tokens for verifying user identity...
+   ```
+
+### How It Works
+
+Semantic search uses embeddings from sentence-transformers to convert documents and queries into high-dimensional vectors. Documents with similar meaning have vectors that are close together in this space, allowing for meaning-based search rather than keyword matching.
+
+The implementation includes two approaches:
+
+1. **Native Vector Search** (for ArangoDB ≥ 3.12 with VECTOR_SIMILARITY support)
+2. **Application-Side Computation** (fallback for older versions)
 
 ## Example Interactions
 
@@ -105,7 +182,7 @@ You: /store backend-auth The new JWT implementation uses RS256 algorithm instead
 Claude: Document created with ID: doc12345 and linked to topic 'Backend Authentication'.
 ```
 
-### Retrieving Knowledge
+### Retrieving Knowledge with Keywords
 
 ```
 You: What authentication method do we use?
@@ -121,15 +198,50 @@ The new JWT implementation uses RS256 algorithm instead of HS256 for enhanced se
 **Confidence**: 0.9
 ```
 
+### Semantic Search
+
+```
+You: Find documentation about user identity verification without using those exact words
+
+Claude: [Uses semantic_search tool]
+Semantic Search Results for: 'user identity verification'
+
+Found 2 semantically similar documents:
+
+1. Authentication Mechanisms (Similarity: 0.87)
+   Our system implements several methods to confirm who users are, including JWT tokens...
+
+2. Security Framework (Similarity: 0.79)
+   User validation happens through a multi-step process involving credentials and MFA...
+```
+
 ## Architecture
 
 This MCP server connects to an ArangoDB database with three collections:
 
-- `documents` - Knowledge fragments
+- `documents` - Knowledge fragments with vector embeddings
 - `topics` - Knowledge organization categories
 - `relationships` - Connections between documents and topics
 
 The architecture follows the MCP protocol to expose database functionality through resources, tools, and prompts.
+
+```
+┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
+│                 │       │                 │       │                 │
+│  Claude or      ◄───────►  MCP Knowledge  ◄───────►  ArangoDB       │
+│  other AI       │       │  Server         │       │  Database       │
+│                 │       │                 │       │                 │
+└─────────────────┘       └─────────────────┘       └─────────────────┘
+                             │
+                             │ generates
+                             ▼
+                          ┌─────────────────┐
+                          │                 │
+                          │  Vector         │
+                          │  Embeddings     │
+                          │                 │
+                          └─────────────────┘
+```
 
 ## Development
 
@@ -138,6 +250,8 @@ To extend this server:
 1. Add new resources for additional access patterns
 2. Implement more tools for specific knowledge operations
 3. Create additional prompt templates for common workflows
+4. Enhance semantic search with more advanced embedding models
+5. Add visualization capabilities for knowledge relationships
 
 ## License
 
