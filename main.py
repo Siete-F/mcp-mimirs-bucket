@@ -11,6 +11,9 @@ from typing import Optional
 from mimirs_bucket.mcp import create_server, run_server
 from mimirs_bucket.utils import setup_logging
 
+# Global server instance that will be detected by MCP clients
+mcp = None
+
 def main(config_file: Optional[str] = None, transport: str = 'stdio'):
     """
     Main entry point for the MCP server.
@@ -25,6 +28,7 @@ def main(config_file: Optional[str] = None, transport: str = 'stdio'):
     try:
         # Create server
         logger.info(f"Starting Mimir's Bucket MCP server with {transport} transport")
+        global mcp
         mcp = create_server(config_file)
         
         # Run server
