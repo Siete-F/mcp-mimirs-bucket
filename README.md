@@ -22,24 +22,20 @@ This project implements a Model Context Protocol (MCP) server that connects to a
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/your-username/mcp-knowledge-server.git
-   cd mcp-knowledge-server
+   git clone https://github.com/siete-F/mcp-mimirs-bucket.git
+   cd mcp-mimirs-bucket
    ```
 
 2. Create a virtual environment:
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   uv venv venv
+   source venv/Scripts/activate  # On Linux: venv\bin\activate
    ```
 
 3. Install dependencies:
+  
    ```bash
-   pip install mcp[cli] python-arango python-dotenv sentence-transformers numpy
-   ```
-   
-   Or use the provided pyproject.toml:
-   ```bash
-   pip install -e .
+   uv pip install -e .
    ```
 
 4. Configure the database connection by creating a `.env` file:
@@ -99,7 +95,20 @@ To integrate with Claude Desktop:
 ```bash
 mcp install mcp_knowledge_db.py -n "Knowledge Base"
 ```
-
+If you like to use your virtual environment, update the configuration like this:
+```
+    "KnowledgeBase": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--python",
+        "F:\\projecten\\mcp-mimirs-bucket\\.venv\\Scripts\\python.exe",
+        "mcp",
+        "run",
+        "F:\\projecten\\mcp-mimirs-bucket\\mcp_knowledge_db.py"
+      ]
+    },
+```
 ## Available Resources
 
 The server exposes these resources:
@@ -142,12 +151,25 @@ The knowledge base includes semantic search capabilities using vector embeddings
    ```
 
 2. **Generate Embeddings**:
-   After adding documents, generate embeddings using the `update_embeddings` tool:
+   After adding documents, generate embeddings using the `update_embeddings` tool or the standalone script:
    ```
+   # Using the MCP tool:
    You: I need to update vector embeddings for all documents
    
    Claude: [Uses update_embeddings tool]
    Successfully updated embeddings for 15 documents.
+   ```
+
+   Or use the standalone script for batch processing:
+   ```bash
+   # Update all documents
+   python update_embeddings.py
+   
+   # Update specific documents
+   python update_embeddings.py -d document_key1 -d document_key2
+   
+   # Dry run (no updates, just logging)
+   python update_embeddings.py --dry-run
    ```
 
 3. **Using Semantic Search**:

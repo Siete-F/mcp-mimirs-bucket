@@ -60,9 +60,16 @@ class Document:
     def from_dict(cls, data: Dict[str, Any]) -> 'Document':
         """Create a Document from a dictionary"""
         doc_data = data.copy()
+        
+        # Handle ArangoDB specific fields
         if "_key" in doc_data:
             doc_data["key"] = doc_data["_key"]
             del doc_data["_key"]
+        
+        # Remove other ArangoDB system fields that don't map to our model
+        for field in ["_id", "_rev"]:
+            if field in doc_data:
+                del doc_data[field]
         
         # Convert metadata dict to DocumentMetadata
         metadata_dict = doc_data["metadata"]
@@ -96,9 +103,17 @@ class Topic:
     def from_dict(cls, data: Dict[str, Any]) -> 'Topic':
         """Create a Topic from a dictionary"""
         topic_data = data.copy()
+        
+        # Handle ArangoDB specific fields
         if "_key" in topic_data:
             topic_data["key"] = topic_data["_key"]
             del topic_data["_key"]
+        
+        # Remove other ArangoDB system fields that don't map to our model
+        for field in ["_id", "_rev"]:
+            if field in topic_data:
+                del topic_data[field]
+                
         return cls(**topic_data)
 
 
@@ -128,12 +143,18 @@ class Relationship:
     def from_dict(cls, data: Dict[str, Any]) -> 'Relationship':
         """Create a Relationship from a dictionary"""
         rel_data = data.copy()
+        
+        # Convert ArangoDB edge fields to our model
         rel_data["from_id"] = rel_data["_from"]
         rel_data["to_id"] = rel_data["_to"]
         del rel_data["_from"]
         del rel_data["_to"]
-        if "_key" in rel_data:
-            del rel_data["_key"]
+        
+        # Remove other ArangoDB system fields
+        for field in ["_id", "_rev", "_key"]:
+            if field in rel_data:
+                del rel_data[field]
+                
         return cls(**rel_data)
 
 

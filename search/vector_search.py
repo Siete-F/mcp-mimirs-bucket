@@ -9,7 +9,7 @@ from typing import List, Dict, Any, Tuple, Optional, Union
 import numpy as np
 
 from arango_document_api import Document, DocumentationSystem
-from search.embeddings import get_embeddings, EmbeddingService
+from search.embeddings import get_embeddings, EmbeddingService, truncate_vector_for_display
 
 logger = logging.getLogger("knowledge-mcp.vector_search")
 
@@ -47,6 +47,7 @@ class VectorSearch:
         try:
             # Generate embedding for the query
             query_embedding = get_embeddings(query)
+            logger.info(f"Query embedding for '{query}': {truncate_vector_for_display(query_embedding)}")
             
             # First, check if ArangoDB version supports VECTOR_SIMILARITY
             try:
@@ -202,9 +203,11 @@ class VectorSearch:
         try:
             # Generate text for embedding
             text = f"{document.title} {document.summary or ''} {document.content}"
+            logger.info(f"Generating embedding for document: {document.key} - '{document.title}'")
             
             # Generate embedding
             embedding = get_embeddings(text)
+            logger.info(f"Generated embedding: {truncate_vector_for_display(embedding)}")
             
             # Update document in database
             self.db.collection("documents").update({
@@ -212,6 +215,7 @@ class VectorSearch:
                 "embedding": embedding
             })
             
+            logger.info(f"Successfully updated embedding for document: {document.key}")
             return True
         except Exception as e:
             logger.error(f"Error updating embedding for document {document.key}: {e}")
