@@ -58,7 +58,6 @@ coverage.xml
 arangodb/
 
 # Embedding models (they can be large)
-models/
 *.bin
 *.pt
 *.pth
@@ -70,7 +69,6 @@ temp/
 *.tmp
 
 # Specific to this project
-embeddings/
 sentence_transformers_cache/
 *.vec
 *.vec.gz

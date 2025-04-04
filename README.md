@@ -1,6 +1,4 @@
-# MCP Knowledge Base Server
-
-This project implements a Model Context Protocol (MCP) server that connects to an ArangoDB-based knowledge management system, enabling LLMs like Claude to store, retrieve, and manage knowledge dynamically.
+A Model Context Protocol (MCP) server that connects to an ArangoDB-based knowledge management system, enabling LLMs like Claude to store, retrieve, and manage knowledge dynamically.
 
 ## Features
 
@@ -15,30 +13,28 @@ This project implements a Model Context Protocol (MCP) server that connects to a
 
 - Python 3.10+
 - ArangoDB (installed locally or running in Docker)
-- The `arango_document_api.py` Python module (ArangoDB client)
-- sentence-transformers (optional but recommended for semantic search)
+- UV package manager (recommended) or pip
 
-## Installation
+## Quick Start
+
+### Installation
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/siete-F/mcp-mimirs-bucket.git
-   cd mcp-mimirs-bucket
+   git clone https://github.com/siete-F/mimirs-bucket.git
+   cd mimirs-bucket
    ```
 
-2. Create a virtual environment:
+2. Run the setup script:
    ```bash
-   uv venv venv
-   source venv/Scripts/activate  # On Linux: venv\bin\activate
+   # On Windows
+   scripts\\setup.bat
+   
+   # On Linux/macOS
+   ./scripts/setup.sh
    ```
 
-3. Install dependencies:
-  
-   ```bash
-   uv pip install -e .
-   ```
-
-4. Configure the database connection by creating a `.env` file:
+3. Configure the database connection by creating a `.env` file:
    ```
    ARANGO_URL=http://localhost:8529
    ARANGO_DB=documentation
@@ -46,18 +42,18 @@ This project implements a Model Context Protocol (MCP) server that connects to a
    ARANGO_PASSWORD=your_password
    
    # MCP Server Settings
-   MCP_SERVER_NAME=KnowledgeBase
+   MCP_SERVER_NAME=MimirsBucket
    MCP_LOG_LEVEL=INFO
    ```
-   
-5. Set up ArangoDB:
 
-   **Using Docker:**
+### Setting Up ArangoDB
+
+1. Start the ArangoDB using Docker:
    ```bash
-   docker run -p 8529:8529 -e ARANGO_ROOT_PASSWORD=rootpassword arangodb/arangodb:3.10.4
+   docker run -p 8529:8529 -e ARANGO_ROOT_PASSWORD=rootpassword arangodb/arangodb:3.12.4
    ```
    
-   Then create the database and collections:
+2. Create the database and collections:
    ```bash
    # Create database
    docker exec -it <container_name> arangosh --server.authentication false --server.database _system --javascript.execute-string="db._createDatabase('documentation');"
@@ -72,20 +68,18 @@ This project implements a Model Context Protocol (MCP) server that connects to a
    docker exec -it <container_name> arangosh --server.authentication false --server.database _system --javascript.execute-string="require('@arangodb/users').grantDatabase('docadmin', 'documentation');"
    ```
 
-## Usage
-
 ### Running the Server
 
 Run the server directly:
 
 ```bash
-python mcp_knowledge_db.py
+python main.py
 ```
 
 Or use the MCP CLI for development:
 
 ```bash
-mcp dev mcp_knowledge_db.py
+mcp dev main.py
 ```
 
 ### Installing with Claude Desktop
@@ -93,8 +87,9 @@ mcp dev mcp_knowledge_db.py
 To integrate with Claude Desktop:
 
 ```bash
-mcp install mcp_knowledge_db.py -n "Knowledge Base"
+mcp install main.py -n "Mimir's Bucket"
 ```
+
 If you like to use your virtual environment, update the configuration like this:
 ```
     "KnowledgeBase": {
@@ -109,6 +104,7 @@ If you like to use your virtual environment, update the configuration like this:
       ]
     },
 ```
+
 ## Available Resources
 
 The server exposes these resources:
@@ -123,21 +119,23 @@ The server exposes these resources:
 
 The server provides these tools:
 
+### Document Tools
 - `store_knowledge` - Add a new document
-- `create_topic` - Create a new topic
 - `update_document` - Update an existing document
 - `link_documents` - Create relationships between documents
 - `retrieve_knowledge` - Find relevant information using keywords
 - `delete_document` - Remove a document
+
+### Topic Tools
+- `create_topic` - Create a new topic
+- `update_topic` - Update an existing topic
+- `delete_topic` - Delete a topic (only if it has no documents)
+- `list_topic_hierarchy` - List all topics in a hierarchical structure
+
+### Search Tools
 - `semantic_search` - Find documents using semantic meaning
+- `keyword_search` - Search for documents containing specific keywords
 - `update_embeddings` - Generate or update vector embeddings
-
-## Prompts
-
-The server includes these prompt templates:
-
-- `store_new_knowledge` - Template for adding new knowledge
-- `search_knowledge` - Template for searching the knowledge base
 
 ## Vector Embeddings and Semantic Search
 
@@ -163,13 +161,13 @@ The knowledge base includes semantic search capabilities using vector embeddings
    Or use the standalone script for batch processing:
    ```bash
    # Update all documents
-   python update_embeddings.py
+   python scripts/update_embeddings.py
    
    # Update specific documents
-   python update_embeddings.py -d document_key1 -d document_key2
+   python scripts/update_embeddings.py -d document_key1 -d document_key2
    
    # Dry run (no updates, just logging)
-   python update_embeddings.py --dry-run
+   python scripts/update_embeddings.py --dry-run
    ```
 
 3. **Using Semantic Search**:

@@ -1,5 +1,5 @@
 """
-Smart search functionality for the knowledge base
+Smart search functionality for Mimir's Bucket
 
 This module provides enhanced search capabilities including:
 - Fuzzy matching for typo-tolerance
@@ -16,7 +16,7 @@ import datetime
 import logging
 from difflib import SequenceMatcher
 
-logger = logging.getLogger("knowledge-mcp.search")
+logger = logging.getLogger("mimirs_bucket.search")
 
 class SmartSearch:
     """Smart search implementation for ArangoDB-based knowledge base"""

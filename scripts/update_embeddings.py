@@ -10,21 +10,22 @@ import argparse
 import logging
 import sys
 from typing import List, Optional
+import os
 
-from arango_document_api import DocumentationSystem
-from search.vector_search import VectorSearch
-from search.embeddings import truncate_vector_for_display
+# Add parent directory to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from mimirs_bucket.db import DocumentationSystem
+from mimirs_bucket.search import VectorSearch
+from mimirs_bucket.search.embeddings import truncate_vector_for_display
+from mimirs_bucket.utils import setup_logging
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler('embeddings_update.log')
-    ]
+logger = setup_logging(
+    level="INFO",
+    log_file='embeddings_update.log',
+    name="update-embeddings"
 )
-logger = logging.getLogger("update-embeddings")
 
 def update_all_embeddings(batch_size: int = 10, dry_run: bool = False) -> int:
     """

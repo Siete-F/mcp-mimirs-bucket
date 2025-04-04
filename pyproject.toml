@@ -40,8 +40,12 @@ dev = [
 "Homepage" = "https://github.com/siete-F/mcp-mimirs-bucket"
 "Bug Tracker" = "https://github.com/siete-F/mcp-mimirs-bucket/issues"
 
+[project.scripts]
+mimirs-bucket = "mimirs_bucket.__main__:main"
+mb-update-embeddings = "scripts.update_embeddings:main"
+
 [tool.hatch.build.targets.wheel]
-packages = ["mcp_knowledge_db"]
+packages = ["mimirs_bucket"]
 
 [tool.black]
 line-length = 88

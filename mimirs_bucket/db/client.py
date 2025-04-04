@@ -1,171 +1,52 @@
 """
-Python client for interacting with the ArangoDB Documentation System
+Client for interacting with the ArangoDB Documentation System.
 """
 
 import os
-import datetime
-# import json
-from typing import List, Dict, Any, Optional, Tuple #Union
-from dataclasses import dataclass, field, asdict
-# import numpy as np
+from typing import List, Dict, Any, Optional, Tuple
 
 from arango import ArangoClient
 from dotenv import load_dotenv
 
+from .models import (
+    Document, 
+    Topic, 
+    Relationship, 
+    DOC_COLLECTION, 
+    TOPIC_COLLECTION, 
+    REL_COLLECTION
+)
+
 # Load environment variables from .env file
 load_dotenv()
 
-# Configuration
-DB_URL = os.getenv("ARANGO_URL", "http://localhost:8529")
-DB_NAME = os.getenv("ARANGO_DB", "documentation")
-DB_USER = os.getenv("ARANGO_USER", "docadmin")
-DB_PASS = os.getenv("ARANGO_PASSWORD", "jansiete")
-
-# Collection names
-DOC_COLLECTION = "documents"
-TOPIC_COLLECTION = "topics"
-REL_COLLECTION = "relationships"
-
-@dataclass
-class DocumentMetadata:
-    """Metadata for a knowledge document"""
-    source: str
-    creator: str
-    created: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
-    updated: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
-    version: int = 1
-
-@dataclass
-class Document:
-    """Represents a knowledge document"""
-    title: str
-    content: str
-    tags: List[str]
-    metadata: DocumentMetadata
-    key: Optional[str] = None
-    summary: Optional[str] = None
-    confidence: float = 0.9
-    embedding: Optional[List[float]] = None
-    status: str = "active"
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for database storage"""
-        result = asdict(self)
-        if self.key:
-            result["_key"] = self.key
-            del result["key"]
-        return result
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Document':
-        """Create a Document from a dictionary"""
-        doc_data = data.copy()
-        
-        # Handle ArangoDB specific fields
-        if "_key" in doc_data:
-            doc_data["key"] = doc_data["_key"]
-            del doc_data["_key"]
-        
-        # Remove other ArangoDB system fields that don't map to our model
-        for field in ["_id", "_rev"]:
-            if field in doc_data:
-                del doc_data[field]
-        
-        # Convert metadata dict to DocumentMetadata
-        metadata_dict = doc_data["metadata"]
-        doc_data["metadata"] = DocumentMetadata(**metadata_dict)
-        
-        return cls(**doc_data)
-
-
-@dataclass
-class Topic:
-    """Represents a knowledge topic"""
-    name: str
-    description: str
-    key: Optional[str] = None
-    parent_topic: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=lambda: {
-        "created": datetime.datetime.now().isoformat(),
-        "creator": "system",
-        "importance": 3
-    })
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for database storage"""
-        result = asdict(self)
-        if self.key:
-            result["_key"] = self.key
-            del result["key"]
-        return result
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Topic':
-        """Create a Topic from a dictionary"""
-        topic_data = data.copy()
-        
-        # Handle ArangoDB specific fields
-        if "_key" in topic_data:
-            topic_data["key"] = topic_data["_key"]
-            del topic_data["_key"]
-        
-        # Remove other ArangoDB system fields that don't map to our model
-        for field in ["_id", "_rev"]:
-            if field in topic_data:
-                del topic_data[field]
-                
-        return cls(**topic_data)
-
-
-@dataclass
-class Relationship:
-    """Represents a relationship between documents or topics"""
-    from_id: str
-    to_id: str
-    type: str
-    strength: float = 0.5
-    bidirectional: bool = False
-    metadata: Dict[str, Any] = field(default_factory=lambda: {
-        "created": datetime.datetime.now().isoformat(),
-        "creator": "system"
-    })
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for database storage"""
-        result = asdict(self)
-        result["_from"] = self.from_id
-        result["_to"] = self.to_id
-        del result["from_id"]
-        del result["to_id"]
-        return result
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Relationship':
-        """Create a Relationship from a dictionary"""
-        rel_data = data.copy()
-        
-        # Convert ArangoDB edge fields to our model
-        rel_data["from_id"] = rel_data["_from"]
-        rel_data["to_id"] = rel_data["_to"]
-        del rel_data["_from"]
-        del rel_data["_to"]
-        
-        # Remove other ArangoDB system fields
-        for field in ["_id", "_rev", "_key"]:
-            if field in rel_data:
-                del rel_data[field]
-                
-        return cls(**rel_data)
+# Default configuration
+DEFAULT_DB_URL = os.getenv("ARANGO_URL", "http://localhost:8529")
+DEFAULT_DB_NAME = os.getenv("ARANGO_DB", "documentation")
+DEFAULT_DB_USER = os.getenv("ARANGO_USER", "docadmin")
+DEFAULT_DB_PASS = os.getenv("ARANGO_PASSWORD", "jansiete")
 
 
 class DocumentationSystem:
     """Client for interacting with the ArangoDB Documentation System"""
     
-    def __init__(self):
-        """Initialize the documentation system client"""
+    def __init__(self, 
+                 url: str = DEFAULT_DB_URL, 
+                 db_name: str = DEFAULT_DB_NAME,
+                 username: str = DEFAULT_DB_USER,
+                 password: str = DEFAULT_DB_PASS):
+        """
+        Initialize the documentation system client
+        
+        Args:
+            url: ArangoDB server URL
+            db_name: Database name
+            username: Database username
+            password: Database password
+        """
         # Initialize the ArangoDB client
-        self.client = ArangoClient(hosts=DB_URL)
-        self.db = self.client.db(DB_NAME, username=DB_USER, password=DB_PASS)
+        self.client = ArangoClient(hosts=url)
+        self.db = self.client.db(db_name, username=username, password=password)
         
         # Get collection references
         self.documents = self.db.collection(DOC_COLLECTION)
@@ -201,7 +82,7 @@ class DocumentationSystem:
             if doc:
                 return Document.from_dict(doc)
             return None
-        except:
+        except Exception:
             return None
     
     def update_document(self, document: Document) -> bool:
@@ -218,14 +99,14 @@ class DocumentationSystem:
             raise ValueError("Document key must be set for updates")
         
         # Update the metadata
-        document.metadata.updated = datetime.datetime.now().isoformat()
+        document.metadata.updated = Document.field_type_factory.now().isoformat()
         document.metadata.version += 1
         
         try:
             doc_dict = document.to_dict()
             self.documents.update({"_key": document.key}, doc_dict)
             return True
-        except:
+        except Exception:
             return False
     
     def delete_document(self, key: str) -> bool:
@@ -243,7 +124,7 @@ class DocumentationSystem:
             # Also delete all relationships
             self._delete_document_relationships(key)
             return True
-        except:
+        except Exception:
             return False
     
     def _delete_document_relationships(self, doc_key: str) -> None:
@@ -285,8 +166,65 @@ class DocumentationSystem:
             if topic:
                 return Topic.from_dict(topic)
             return None
-        except:
+        except Exception:
             return None
+            
+    def update_topic(self, topic: Topic) -> bool:
+        """
+        Update an existing topic
+        
+        Args:
+            topic: The topic to update (must have key set)
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if not topic.key:
+            raise ValueError("Topic key must be set for updates")
+        
+        try:
+            topic_dict = topic.to_dict()
+            self.topics.update({"_key": topic.key}, topic_dict)
+            return True
+        except Exception:
+            return False
+            
+    def delete_topic(self, key: str) -> bool:
+        """
+        Delete a topic
+        
+        Args:
+            key: The topic key
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Get documents in this topic
+            docs = self.get_documents_by_topic(key)
+            
+            if docs:
+                return False  # Can't delete topic with documents
+                
+            # Delete the topic
+            self.topics.delete(key)
+            
+            # Delete any relationships involving this topic
+            self._delete_topic_relationships(key)
+            
+            return True
+        except Exception:
+            return False
+            
+    def _delete_topic_relationships(self, topic_key: str) -> None:
+        """Delete all relationships involving a topic"""
+        topic_id = f"{TOPIC_COLLECTION}/{topic_key}"
+        query = """
+        FOR rel IN relationships
+            FILTER rel._from == @topicId OR rel._to == @topicId
+            REMOVE rel IN relationships
+        """
+        self.db.aql.execute(query, bind_vars={"topicId": topic_id})
     
     def add_relationship(self, relationship: Relationship) -> str:
         """
@@ -533,45 +471,3 @@ class DocumentationSystem:
                 roots.append(topics_by_key[topic.key])
         
         return {"topics": roots}
-
-
-# Usage example
-if __name__ == "__main__":
-    # Create system client
-    doc_system = DocumentationSystem()
-    
-    # Create a topic
-    architecture_topic = Topic(
-        name="System Architecture",
-        description="Documentation about the system's architecture"
-    )
-    
-    architecture_key = doc_system.add_topic(architecture_topic)
-    print(f"Created topic with key: {architecture_key}")
-    
-    # Add a document
-    metadata = DocumentMetadata(
-        source="initial_design",
-        creator="john_doe"
-    )
-    
-    architecture_doc = Document(
-        title="Database Selection",
-        content="We selected ArangoDB for its multi-model capabilities...",
-        tags=["architecture", "database", "design"],
-        metadata=metadata,
-        summary="Database technology selection rationale"
-    )
-    
-    doc_key = doc_system.add_document(architecture_doc)
-    print(f"Created document with key: {doc_key}")
-    
-    # Link document to topic
-    rel_key = doc_system.link_document_to_topic(doc_key, architecture_key)
-    print(f"Created relationship with key: {rel_key}")
-    
-    # Search for documents
-    results = doc_system.search_documents("database")
-    print(f"Found {len(results)} documents matching 'database'")
-    for doc in results:
-        print(f" - {doc.title}")

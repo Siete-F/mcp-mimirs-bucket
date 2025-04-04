@@ -1,5 +1,5 @@
 """
-Vector search functionality for the knowledge base.
+Vector search functionality for Mimir's Bucket.
 
 This module provides semantic search capabilities using vector embeddings.
 """
@@ -8,10 +8,10 @@ import logging
 from typing import List, Dict, Any, Tuple, Optional, Union
 import numpy as np
 
-from arango_document_api import Document, DocumentationSystem
-from search.embeddings import get_embeddings, EmbeddingService, truncate_vector_for_display
+from mimirs_bucket.db import Document, DocumentationSystem
+from mimirs_bucket.search.embeddings import get_embeddings, EmbeddingService, truncate_vector_for_display
 
-logger = logging.getLogger("knowledge-mcp.vector_search")
+logger = logging.getLogger("mimirs_bucket.vector_search")
 
 class VectorSearch:
     """
