@@ -9,10 +9,7 @@ from .log_utils import (
     LOG_LEVEL_MAP,
     get_log_level,
     create_stderr_handler,
-    create_file_handler,
-    configure_library_logger,
-    configure_third_party_loggers,
-    redirect_stdout_handlers_to_stderr
+    configure_third_party_loggers
 )
 
 __all__ = [
@@ -22,8 +19,5 @@ __all__ = [
     'LOG_LEVEL_MAP',
     'get_log_level',
     'create_stderr_handler',
-    'create_file_handler',
-    'configure_library_logger',
-    'configure_third_party_loggers',
-    'redirect_stdout_handlers_to_stderr'
+    'configure_third_party_loggers'
 ]
