@@ -2,14 +2,13 @@
 """
 Main entry point for Mimir's Bucket MCP server.
 """
-
 import sys
-import logging
 import argparse
 from typing import Optional
 
 from mimirs_bucket.mcp import create_server, run_server
-from mimirs_bucket.utils import setup_logging
+from mimirs_bucket.utils import configure_third_party_loggers
+from mimirs_bucket.utils.log_utils import setup_logging
 
 # Global server instance that will be detected by MCP clients
 mcp = None
@@ -24,6 +23,9 @@ def main(config_file: Optional[str] = None, transport: str = 'stdio'):
     """
     # Setup logging
     logger = setup_logging(level="INFO", name="mimirs_bucket")
+    
+    # Configure other library loggers to use stderr
+    configure_third_party_loggers(["transformers", "sentence_transformers", "torch"])
     
     try:
         # Create server

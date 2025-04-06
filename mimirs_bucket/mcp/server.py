@@ -3,6 +3,7 @@ MCP server implementation for Mimir's Bucket.
 """
 
 import logging
+from textwrap import dedent
 from typing import Optional
 
 from mcp.server.fastmcp import FastMCP
@@ -13,7 +14,8 @@ from mimirs_bucket.tools import (
     register_search_tools,
     register_topic_tools
 )
-from mimirs_bucket.utils import load_config, setup_logging
+from mimirs_bucket.utils import load_config
+from mimirs_bucket.utils.log_utils import setup_logging
 
 logger = logging.getLogger("mimirs_bucket.mcp")
 
@@ -35,10 +37,7 @@ def create_server(
     config = load_config(config_file)
     
     # Setup logging
-    setup_logging(
-        level=config["mcp"]["log_level"],
-        log_file="mimirs_bucket.log"
-    )
+    setup_logging(level=config["mcp"]["log_level"], name="mimirs_bucket_server")
     
     # Create MCP server
     mcp = FastMCP(
@@ -71,25 +70,28 @@ def create_server(
     @mcp.prompt()
     def store_new_knowledge(topic: str, title: str) -> str:
         """Create a new knowledge document in the system"""
-        return f"""I want to store new information in the knowledge base.
+        return dedent(
+            f"""I want to store new information in the knowledge base.
 
-Topic: {topic}
-Title: {title}
+            Topic: {topic}
+            Title: {title}
 
-Please provide the information to store below, being as detailed and clear as possible:
-
-"""
+            Please provide the information to store below, being as detailed and clear as possible:
+            """
+        )
 
     @mcp.prompt()
     def search_knowledge(query: str) -> str:
         """Search for information in the knowledge base"""
-        return f"""Please search the knowledge base for information about:
+        return dedent(
+            f"""Please search the knowledge base for information about:
 
-{query}
+            {query}
 
-Please provide a comprehensive answer based on all relevant knowledge you can find.
-"""
-    
+            Please provide a comprehensive answer based on all relevant knowledge you can find.
+            """
+        )
+
     return mcp
 
 def run_server(

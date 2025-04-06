@@ -9,10 +9,8 @@ This module provides enhanced search capabilities including:
 - Suggestion of related search terms
 """
 
-import re
-from typing import List, Dict, Any, Optional, Tuple, Set
+from typing import List, Dict, Any, Set
 import string
-import datetime
 import logging
 from difflib import SequenceMatcher
 

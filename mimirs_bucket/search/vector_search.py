@@ -5,7 +5,7 @@ This module provides semantic search capabilities using vector embeddings.
 """
 
 import logging
-from typing import List, Dict, Any, Tuple, Optional, Union
+from typing import List, Tuple, Optional
 import numpy as np
 
 from mimirs_bucket.db import Document, DocumentationSystem

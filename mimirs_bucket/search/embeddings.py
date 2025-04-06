@@ -4,10 +4,10 @@ Embedding service for generating and manipulating text embeddings.
 
 import logging
 import numpy as np
-from typing import List, Dict, Any, Union, Optional, Tuple
+from typing import List, Union
 import importlib.util
-import os
 
+# Configure standard logging for this module
 logger = logging.getLogger("mimirs_bucket.embeddings")
 
 def truncate_vector_for_display(vector: Union[List[float], np.ndarray], max_elements: int = 20) -> str:
@@ -68,6 +68,7 @@ class EmbeddingService:
         try:
             # Check if sentence-transformers is available
             if importlib.util.find_spec("sentence_transformers") is not None:
+                # Import the library
                 from sentence_transformers import SentenceTransformer
                 self.model = SentenceTransformer(self.model_name)
                 

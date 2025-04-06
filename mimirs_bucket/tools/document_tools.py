@@ -3,10 +3,10 @@ Document-related MCP tools for Mimir's Bucket.
 """
 
 import logging
-from typing import Optional, List, Dict, Any, Union
+from typing import Optional, Any, Union
 from datetime import datetime
 
-from mcp.server.fastmcp import FastMCP, Context
+from mcp.server.fastmcp import FastMCP
 from mimirs_bucket.db import DocumentationSystem, Document, DocumentMetadata
 
 logger = logging.getLogger("mimirs_bucket.tools.document")
