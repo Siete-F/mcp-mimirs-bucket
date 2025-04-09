@@ -8,6 +8,7 @@ from typing import Optional
 from mcp.server.fastmcp import FastMCP
 from mimirs_bucket.db import DocumentationSystem
 from mimirs_bucket.search import VectorSearch
+from mimirs_bucket.search.embeddings import generate_and_store_embedding
 
 logger = logging.getLogger("mimirs_bucket.tools.search")
 
@@ -35,7 +36,7 @@ def register_search_tools(mcp: FastMCP, doc_system: DocumentationSystem) -> None
         similar to your query, even if they don't contain the exact keywords.
         
         Args:
-            query: What you're looking for
+            query: What you're looking for, only in the english natural language.
             max_results: Maximum number of results to return (1-20)
             min_similarity: Minimum similarity score (0-1)
         """

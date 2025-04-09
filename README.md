@@ -139,7 +139,7 @@ The server provides these tools:
 
 ## Vector Embeddings and Semantic Search
 
-The knowledge base includes semantic search capabilities using vector embeddings, allowing you to find documents based on meaning rather than just keyword matching.
+The knowledge base includes semantic search capabilities using vector embeddings, allowing you to find documents based on meaning rather than just keyword matching. Embeddings are automatically generated when documents are created or updated, so semantic search capabilities are always available without any additional steps.
 
 ### Setting Up Vector Search
 
@@ -148,10 +148,11 @@ The knowledge base includes semantic search capabilities using vector embeddings
    pip install sentence-transformers numpy
    ```
 
-2. **Generate Embeddings**:
-   After adding documents, generate embeddings using the `update_embeddings` tool or the standalone script:
+2. **Automatic Embedding Generation**:
+   Embeddings are now automatically generated when documents are created or updated, so there's no need for an explicit embedding step. However, you can still manually update embeddings if needed:
+
    ```
-   # Using the MCP tool:
+   # Using the MCP tool to update all embeddings:
    You: I need to update vector embeddings for all documents
    
    Claude: [Uses update_embeddings tool]

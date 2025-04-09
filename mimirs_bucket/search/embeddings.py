@@ -4,8 +4,10 @@ Embedding service for generating and manipulating text embeddings.
 
 import logging
 import numpy as np
-from typing import List, Union
+from typing import List, Union, Tuple, Optional, Any
 import importlib.util
+
+from mimirs_bucket.db import Document
 
 # Configure standard logging for this module
 logger = logging.getLogger("mimirs_bucket.embeddings")
@@ -201,3 +203,141 @@ def get_embeddings(text: Union[str, List[str]]) -> List[float]:
         return embeddings.tolist()
     else:
         return [emb.tolist() for emb in embeddings]
+
+
+def generate_and_store_embedding(doc_system: Any, doc_key: Union[str, int]) -> bool:
+    """
+    Generate and store embedding for a single document.
+    
+    Args:
+        doc_system: Documentation system instance
+        doc_key: Key of the document to update
+        
+    Returns:
+        Success status
+    """
+    try:
+        # Get the document
+        document = doc_system.get_document(str(doc_key))
+        if not document:
+            logger.error(f"Document with key {doc_key} not found")
+            return False
+        
+        # Generate text for embedding
+        text = f"{document.title} {document.summary or ''} {document.content}"
+        logger.info(f"Generating embedding for document: {document.key} - '{document.title}'")
+        
+        # Generate embedding
+        embedding = get_embeddings(text)
+        logger.info(f"Generated embedding: {truncate_vector_for_display(embedding)}")
+        
+        # Update document in database
+        doc_system.db.collection("documents").update({
+            "_key": document.key,
+            "embedding": embedding
+        })
+        
+        logger.info(f"Successfully updated embedding for document: {document.key}")
+        return True
+    except Exception as e:
+        logger.error(f"Error updating embedding for document {doc_key}: {e}")
+        return False
+
+
+# Vector search functions - moved from vector_search.py
+def search_with_vector_similarity(db: Any, query_embedding: List[float], limit: int, min_score: float) -> List[Tuple[Document, float]]:
+    """
+    Search using ArangoDB's native VECTOR_SIMILARITY function.
+    
+    Args:
+        db: ArangoDB database instance
+        query_embedding: The embedding vector for the query
+        limit: Maximum number of results
+        min_score: Minimum similarity score (0-1)
+        
+    Returns:
+        List of (document, similarity_score) tuples
+    """
+    # AQL query using VECTOR_SIMILARITY
+    aql = """
+    FOR doc IN documents
+        FILTER doc.embedding != null
+        
+        // Calculate cosine similarity using built-in function
+        LET similarity = VECTOR_SIMILARITY(doc.embedding, @embedding, "cosine")
+        
+        // Filter by minimum similarity threshold
+        FILTER similarity >= @minScore
+        
+        // Sort by similarity (highest first)
+        SORT similarity DESC
+        
+        // Limit results
+        LIMIT @limit
+        
+        RETURN {
+            doc: doc, 
+            score: similarity
+        }
+    """
+    
+    # Execute query
+    results = db.aql.execute(aql, bind_vars={
+        "embedding": query_embedding,
+        "minScore": min_score,
+        "limit": limit
+    })
+    
+    # Convert to Document objects with scores
+    documents = []
+    for result in results:
+        doc = Document.from_dict(result["doc"])
+        documents.append((doc, result["score"]))
+    
+    return documents
+
+
+def search_with_app_computation(db: Any, query_embedding: List[float], limit: int, min_score: float) -> List[Tuple[Document, float]]:
+    """
+    Fallback method that computes vector similarity in the application.
+    
+    Args:
+        db: ArangoDB database instance
+        query_embedding: The embedding vector for the query
+        limit: Maximum number of results
+        min_score: Minimum similarity score (0-1)
+        
+    Returns:
+        List of (document, similarity_score) tuples
+    """
+    # Fetch documents with embeddings
+    aql = """
+    FOR doc IN documents
+        FILTER doc.embedding != null
+        RETURN doc
+    """
+    
+    results = db.aql.execute(aql)
+    
+    # Convert query embedding to numpy for faster computation
+    query_vec = np.array(query_embedding)
+    
+    # Calculate similarity for each document
+    scored_docs = []
+    
+    for doc_dict in results:
+        doc = Document.from_dict(doc_dict)
+        
+        if not doc.embedding:
+            continue
+            
+        # Calculate cosine similarity
+        doc_vec = np.array(doc.embedding)
+        similarity = _embedding_service.cosine_similarity(query_vec, doc_vec)
+        
+        if similarity >= min_score:
+            scored_docs.append((doc, float(similarity)))
+    
+    # Sort by similarity (descending) and limit
+    scored_docs.sort(key=lambda x: x[1], reverse=True)
+    return scored_docs[:limit]
