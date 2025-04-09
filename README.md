@@ -137,6 +137,9 @@ The server provides these tools:
 - `keyword_search` - Search for documents containing specific keywords
 - `update_embeddings` - Generate or update vector embeddings
 
+### Tag Tools
+- `list_tags` - Get a list of all tags used in the knowledge base
+
 ## Vector Embeddings and Semantic Search
 
 The knowledge base includes semantic search capabilities using vector embeddings, allowing you to find documents based on meaning rather than just keyword matching. Embeddings are automatically generated when documents are created or updated, so semantic search capabilities are always available without any additional steps.

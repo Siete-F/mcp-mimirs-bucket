@@ -12,7 +12,8 @@ from mimirs_bucket.db import DocumentationSystem
 from mimirs_bucket.tools import (
     register_document_tools,
     register_search_tools,
-    register_topic_tools
+    register_topic_tools,
+    register_tag_tools
 )
 from mimirs_bucket.utils import load_config
 from mimirs_bucket.utils.log_utils import setup_logging
@@ -64,6 +65,7 @@ def create_server(
     register_document_tools(mcp, db_client)
     register_search_tools(mcp, db_client)
     register_topic_tools(mcp, db_client)
+    register_tag_tools(mcp, db_client)
     
     # Add prompt templates
     
