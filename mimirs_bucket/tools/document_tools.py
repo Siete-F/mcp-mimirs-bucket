@@ -257,3 +257,46 @@ def register_document_tools(mcp: FastMCP, doc_system: DocumentationSystem) -> No
         except Exception as e:
             logger.error(f"Error deleting document: {e}")
             return f"Error deleting document: {str(e)}"
+
+def get_document_impl(doc_system, doc_key: str) -> str:
+    """Get a specific document's contents"""
+    try:
+        document = doc_system.get_document(doc_key)
+        if not document:
+            return f"Document with key '{doc_key}' not found"
+        
+        # Format as a readable document
+        result = f"# {document.title}\n\n"
+        
+        if document.summary:
+            result += f"**Summary**: {document.summary}\n\n"
+        
+        # Get metadata
+        result += "## Metadata\n\n"
+        result += f"- **ID**: {document.key}\n"
+        result += f"- **Tags**: {', '.join(document.tags)}\n"
+        result += f"- **Created**: {document.metadata.created}\n"
+        result += f"- **Updated**: {document.metadata.updated}\n"
+        result += f"- **Version**: {document.metadata.version}\n"
+        result += f"- **Source**: {document.metadata.source}\n"
+        result += f"- **Creator**: {document.metadata.creator}\n"
+        result += f"- **Confidence**: {document.confidence}\n\n"
+        
+        # Content
+        result += "## Content\n\n"
+        result += document.content
+        
+        # Related documents
+        try:
+            related_docs = doc_system.get_related_documents(doc_key)
+            if related_docs:
+                result += "\n\n## Related Documents\n\n"
+                for rel_doc in related_docs:
+                    result += f"- [{rel_doc.title}] (document://{rel_doc.key})\n"
+        except Exception as e:
+            logger.warning(f"Error getting related documents: {e}")
+        
+        return result
+    except Exception as e:
+        logger.error(f"Error getting document: {e}")
+        return f"Error getting document: {str(e)}"

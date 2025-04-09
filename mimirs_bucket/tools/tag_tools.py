@@ -65,3 +65,38 @@ def register_tag_tools(mcp: FastMCP, doc_system: DocumentationSystem) -> None:
         except Exception as e:
             logger.error(f"Error listing tags: {e}")
             return f"Error listing tags: {str(e)}"
+
+def get_documents_by_tag_impl(doc_system, tag: str) -> str:
+    """Get all documents with a specific tag"""
+    try:
+        tag = tag.strip().lower()
+        
+        # Search for documents with this tag
+        documents = doc_system.get_documents_by_tag(tag)
+        
+        # Format results
+        output = f"# Documents Tagged with '{tag}'\n\n"
+        
+        if not documents:
+            output += f"No documents found with tag '{tag}'.\n"
+            return output
+        
+        output += f"Found {len(documents)} documents:\n\n"
+        
+        for idx, doc in enumerate(documents, 1):
+            output += f"## {idx}. {doc.title}\n"
+            if doc.summary:
+                output += f"{doc.summary}\n\n"
+            
+            output += f"**Tags**: {', '.join(doc.tags)}\n"
+            output += f"**Document ID**: {doc.key}\n\n"
+            
+            # Include a snippet of content
+            snippet = doc.content[:200] + "..." if len(doc.content) > 200 else doc.content
+            output += f"{snippet}\n\n"
+            output += "---\n\n"
+        
+        return output
+    except Exception as e:
+        logger.error(f"Error getting documents by tag: {e}")
+        return f"Error getting documents by tag: {str(e)}"
