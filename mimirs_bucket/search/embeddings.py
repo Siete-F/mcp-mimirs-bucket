@@ -98,10 +98,8 @@ class EmbeddingService:
         
         # Generate embeddings with the model
         try:
-            if isinstance(text, str):
-                return self.model.encode(text, normalize_embeddings=True)
-            else:
-                return self.model.encode(text, normalize_embeddings=True)
+            return self.model.encode(text, normalize_embeddings=True)
+
         except Exception as e:
             logger.error(f"Error generating embeddings: {e}. Falling back to simple method.")
             return self._fallback_embeddings(text)
