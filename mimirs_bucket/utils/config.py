@@ -28,7 +28,7 @@ def load_config(env_file: Optional[str] = None) -> Dict[str, Any]:
             "url": os.getenv("ARANGO_URL", "http://localhost:8529"),
             "name": os.getenv("ARANGO_DB", "documentation"),
             "user": os.getenv("ARANGO_USER", "docadmin"),
-            "password": os.getenv("ARANGO_PASSWORD", ""),
+            "password": os.getenv("ARANGO_PASSWORD", "myrootpassword"),
         },
         "mcp": {
             "server_name": os.getenv("MCP_SERVER_NAME", "MimirsBucket"),

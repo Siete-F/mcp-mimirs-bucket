@@ -49,23 +49,26 @@ A Model Context Protocol (MCP) server that connects to an ArangoDB-based knowled
 ### Setting Up ArangoDB
 
 1. Start the ArangoDB using Docker:
-   ```bash
-   docker run -p 8529:8529 -e ARANGO_ROOT_PASSWORD=rootpassword arangodb/arangodb:3.12.4
+   ```ps1
+   docker run --name mimirs-well -d -p 8529:8529 -e ARANGO_ROOT_PASSWORD=admin arangodb/arangodb:3.12.4
    ```
-   
+   The root user is, supprisingly, called: `root`
+   (To undo this action and try again with different settings, call: `docker stop mimirs-well; docker rm mimirs-well`)
+
 2. Create the database and collections:
-   ```bash
+   ```ps1
    # Create database
-   docker exec -it <container_name> arangosh --server.authentication false --server.database _system --javascript.execute-string="db._createDatabase('documentation');"
+   $docker_exec = @("arangosh", "--server.authentication", "true", "--server.password", "admin", "--server.database", "_system")
+   docker exec -it mimirs-well $docker_exec --javascript.execute-string="db._createDatabase('documentation');"
    
    # Create collections
-   docker exec -it <container_name> arangosh --server.authentication false --server.database documentation --javascript.execute-string="db._createDocumentCollection('documents');"
-   docker exec -it <container_name> arangosh --server.authentication false --server.database documentation --javascript.execute-string="db._createDocumentCollection('topics');"
-   docker exec -it <container_name> arangosh --server.authentication false --server.database documentation --javascript.execute-string="db._createEdgeCollection('relationships');"
-   
+   docker exec -it mimirs-well $docker_exec --javascript.execute-string="db._createDocumentCollection('documents');"
+   docker exec -it mimirs-well $docker_exec --javascript.execute-string="db._createDocumentCollection('topics');"
+   docker exec -it mimirs-well $docker_exec --javascript.execute-string="db._createEdgeCollection('relationships');"
+
    # Create user
-   docker exec -it <container_name> arangosh --server.authentication false --server.database _system --javascript.execute-string="require('@arangodb/users').save('docadmin', 'your_password');"
-   docker exec -it <container_name> arangosh --server.authentication false --server.database _system --javascript.execute-string="require('@arangodb/users').grantDatabase('docadmin', 'documentation');"
+   docker exec -it mimirs-well $docker_exec --javascript.execute-string="require('@arangodb/users').save('docadmin', 'myrootpassword');"
+   docker exec -it mimirs-well $docker_exec --javascript.execute-string="require('@arangodb/users').grantDatabase('docadmin', 'documentation');"
    ```
 
 ### Running the Server
