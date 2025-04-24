@@ -3,11 +3,14 @@ Document-related MCP tools for Mimir's Bucket.
 """
 
 import logging
+import time
+import os
 from typing import Optional, Any, Union
 from datetime import datetime
 
 from mcp.server.fastmcp import FastMCP
 from mimirs_bucket.db import DocumentationSystem, Document, DocumentMetadata
+from mimirs_bucket.search.embeddings import generate_and_store_embedding
 
 logger = logging.getLogger("mimirs_bucket.tools.document")
 
@@ -31,11 +34,11 @@ def register_document_tools(mcp: FastMCP, doc_system: DocumentationSystem) -> No
         Store a new piece of knowledge in the system
         
         Args:
-            title: The title of the knowledge document
-            content: The content of the knowledge document
-            topic_key: Optional topic key to associate with this document
+            title: The title of the knowledge document (in english)
+            content: The content of the knowledge document (in english)
+            topic_key: Optional topic key to associate with this document. Obtain keys first to see if it can be matched already.
             tags: Optional comma-separated list of tags
-            summary: Optional short summary of the content
+            summary: Optional short summary of the content (in english)
         """
         topic_key = str(topic_key) if topic_key else None
         try:
@@ -47,7 +50,7 @@ def register_document_tools(mcp: FastMCP, doc_system: DocumentationSystem) -> No
             # Create metadata
             metadata = DocumentMetadata(
                 source="mcp_conversation",
-                creator="mcp_user",
+                creator=os.environ["USERNAME"],
                 created=datetime.now().isoformat(),
                 updated=datetime.now().isoformat(),
                 version=1
@@ -65,6 +68,12 @@ def register_document_tools(mcp: FastMCP, doc_system: DocumentationSystem) -> No
             
             # Add to database
             doc_key = doc_system.add_document(document)
+            
+            # Generate and store embedding
+            start_time = time.time()
+            success = generate_and_store_embedding(doc_system, doc_key)
+            duration = time.time() - start_time
+            logger.info(f"Embedding generation for document {doc_key} completed in {duration:.2f} seconds. Success: {success}")
             
             # Link to topic if provided
             if topic_key:
@@ -97,9 +106,9 @@ def register_document_tools(mcp: FastMCP, doc_system: DocumentationSystem) -> No
         
         Args:
             doc_key: The document key to update
-            title: Optional new title
-            content: Optional new content
-            summary: Optional new summary
+            title: Optional new title (in english)
+            content: Optional new content (in english)
+            summary: Optional new summary (in english)
             add_tags: Optional comma-separated list of tags to add
             remove_tags: Optional comma-separated list of tags to remove
         """
@@ -133,6 +142,13 @@ def register_document_tools(mcp: FastMCP, doc_system: DocumentationSystem) -> No
             
             # Update the document
             success = doc_system.update_document(document)
+            
+            # Generate and store updated embedding
+            if success:
+                start_time = time.time()
+                embed_success = generate_and_store_embedding(doc_system, document.key)
+                duration = time.time() - start_time
+                logger.info(f"Embedding update for document {document.key} completed in {duration:.2f} seconds. Success: {embed_success}")
             
             if success:
                 return f"Document '{doc_key}' updated successfully"
@@ -241,3 +257,46 @@ def register_document_tools(mcp: FastMCP, doc_system: DocumentationSystem) -> No
         except Exception as e:
             logger.error(f"Error deleting document: {e}")
             return f"Error deleting document: {str(e)}"
+
+def get_document_impl(doc_system, doc_key: str) -> str:
+    """Get a specific document's contents"""
+    try:
+        document = doc_system.get_document(doc_key)
+        if not document:
+            return f"Document with key '{doc_key}' not found"
+        
+        # Format as a readable document
+        result = f"# {document.title}\n\n"
+        
+        if document.summary:
+            result += f"**Summary**: {document.summary}\n\n"
+        
+        # Get metadata
+        result += "## Metadata\n\n"
+        result += f"- **ID**: {document.key}\n"
+        result += f"- **Tags**: {', '.join(document.tags)}\n"
+        result += f"- **Created**: {document.metadata.created}\n"
+        result += f"- **Updated**: {document.metadata.updated}\n"
+        result += f"- **Version**: {document.metadata.version}\n"
+        result += f"- **Source**: {document.metadata.source}\n"
+        result += f"- **Creator**: {document.metadata.creator}\n"
+        result += f"- **Confidence**: {document.confidence}\n\n"
+        
+        # Content
+        result += "## Content\n\n"
+        result += document.content
+        
+        # Related documents
+        try:
+            related_docs = doc_system.get_related_documents(doc_key)
+            if related_docs:
+                result += "\n\n## Related Documents\n\n"
+                for rel_doc in related_docs:
+                    result += f"- [{rel_doc.title}] (document://{rel_doc.key})\n"
+        except Exception as e:
+            logger.warning(f"Error getting related documents: {e}")
+        
+        return result
+    except Exception as e:
+        logger.error(f"Error getting document: {e}")
+        return f"Error getting document: {str(e)}"

@@ -8,6 +8,7 @@ from typing import Optional
 from mcp.server.fastmcp import FastMCP
 from mimirs_bucket.db import DocumentationSystem
 from mimirs_bucket.search import VectorSearch
+from mimirs_bucket.search.embeddings import generate_and_store_embedding
 
 logger = logging.getLogger("mimirs_bucket.tools.search")
 
@@ -35,7 +36,7 @@ def register_search_tools(mcp: FastMCP, doc_system: DocumentationSystem) -> None
         similar to your query, even if they don't contain the exact keywords.
         
         Args:
-            query: What you're looking for
+            query: What you're looking for, only in the english natural language.
             max_results: Maximum number of results to return (1-20)
             min_similarity: Minimum similarity score (0-1)
         """
@@ -81,35 +82,7 @@ def register_search_tools(mcp: FastMCP, doc_system: DocumentationSystem) -> None
         except Exception as e:
             logger.error(f"Error in semantic search: {e}")
             return f"Error performing semantic search: {str(e)}"
-    
-    @mcp.tool()
-    def update_embeddings(doc_key: Optional[str] = None) -> str:
-        """
-        Update vector embeddings for documents.
-        
-        This tool generates or updates vector embeddings used for semantic search.
-        
-        Args:
-            doc_key: Optional specific document key to update (updates all if omitted)
-        """
-        try:
-            if doc_key:
-                # Update a specific document
-                success = vector_search.update_document_embeddings(doc_key) > 0
-                
-                if success:
-                    return f"Successfully updated embeddings for document {doc_key}."
-                else:
-                    return f"Failed to update embeddings for document {doc_key}."
-            else:
-                # Update all documents
-                count = vector_search.update_document_embeddings()
-                return f"Successfully updated embeddings for {count} documents."
-                
-        except Exception as e:
-            logger.error(f"Error updating embeddings: {e}")
-            return f"Error updating embeddings: {str(e)}"
-    
+
     @mcp.tool()
     def keyword_search(
         query: str,
@@ -172,3 +145,41 @@ def register_search_tools(mcp: FastMCP, doc_system: DocumentationSystem) -> None
         except Exception as e:
             logger.error(f"Error in keyword search: {e}")
             return f"Error performing keyword search: {str(e)}"
+
+def search_documents_impl(doc_system, query: str) -> str:
+    """Search for documents matching the query"""
+    try:
+        # Clean up query
+        query = query.strip()
+        if not query:
+            return "Empty search query"
+        
+        # Search for matching documents
+        results = doc_system.search_documents(query, limit=20)
+        
+        # Format results
+        output = f"# Search Results for: '{query}'\n\n"
+        
+        if not results:
+            output += "No documents found matching your query.\n"
+            return output
+        
+        output += f"Found {len(results)} matching documents:\n\n"
+        
+        for idx, doc in enumerate(results, 1):
+            output += f"## {idx}. {doc.title}\n"
+            if doc.summary:
+                output += f"{doc.summary}\n\n"
+            else:
+                # Extract a snippet from content
+                snippet = doc.content[:200] + "..." if len(doc.content) > 200 else doc.content
+                output += f"{snippet}\n\n"
+            
+            output += f"**Tags**: {', '.join(doc.tags)}\n"
+            output += f"**Document ID**: {doc.key}\n"
+            output += f"**Created**: {doc.metadata.created}\n\n"
+        
+        return output
+    except Exception as e:
+        logger.error(f"Error searching documents: {e}")
+        return f"Error searching documents: {str(e)}"
